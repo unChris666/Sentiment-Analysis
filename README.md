@@ -1,86 +1,164 @@
-# Sentiment Analysis of ChatGPT Reviews
+# Sentiment Analysis of ChatGPT Reviews using Deep Learning
 
-This project performs sentiment analysis on user reviews of ChatGPT collected from the Google Play Store. It was developed as part of a machine learning assignment using Python and NLP techniques.
+This repository contains a comprehensive analysis and comparison of different deep learning models for classifying the sentiment of user reviews for ChatGPT. The project explores architectures ranging from classic recurrent neural networks (RNNs) to state-of-the-art Transformer models.
 
-## 📌 Project Objective
+---
 
-The main objective is to classify user reviews into sentiment categories — **positive**, **neutral**, and **negative** — using natural language processing and machine learning techniques. This analysis helps understand public perception and feedback about the ChatGPT application.
+## 📌 Project Overview
 
-## 🛠️ Methodology
+The primary goal of this project is to build and evaluate an effective sentiment analysis model for app reviews. The dataset consists of user reviews for the ChatGPT application, which are categorized into positive, negative, and neutral sentiments.
 
-1. **Text Preprocessing**:
-   - Tokenization with NLTK
-   - Stopword removal (NLTK and spaCy)
-   - Regular expression cleaning
-   - Lowercasing and punctuation removal
+A key challenge in this dataset is the significant class imbalance, with a majority of reviews being positive. This project implements and compares three distinct modeling schemes, each employing strategies to mitigate the effects of this imbalance.
 
-2. **Exploratory Data Analysis (EDA)**:
-   - Class distribution visualization
-   - Word frequency analysis for each sentiment
+---
 
-3. **Feature Engineering**:
-   - TF-IDF Vectorization
+## ⭐ Key Features
 
-4. **Modeling**:
-   - Models used:
-     - Multinomial Naive Bayes
-     - Logistic Regression
-     - Support Vector Machine (SVM)
-   - Evaluation using:
-     - Accuracy
-     - Classification Report (Precision, Recall, F1-Score)
-     - Confusion Matrix
+- **Data Preprocessing**: A standardized pipeline for cleaning and preparing text data.
+- **Automated Labeling**: Use of the VADER sentiment lexicon to programmatically label the dataset.
+- **Three Modeling Schemes**:
+  - **Bi-GRU with GloVe Embeddings**: A classic RNN approach using pre-trained word embeddings.
+  - **BERT Fine-Tuning**: Fine-tuning the `bert-base-uncased` model for sequence classification.
+  - **RoBERTa Fine-Tuning**: Fine-tuning the more robust `roberta-base` model.
+- **Handling Class Imbalance**: All models utilize class weighting in the loss function to give more importance to minority classes (negative and neutral).
 
-## 📊 Results Summary
+---
 
-- **Best model**: Support Vector Machine (SVM)
-- **Accuracy**: ~88% on test data
-- **Observations**:
-  - Positive reviews dominate the dataset.
-  - The classifier performs better on positive and negative classes compared to neutral.
+## 🔍 Methodology
 
-## 📂 Dataset
+### 1. Dataset
+- **Source**: "ChatGPT Cleaned Reviews" dataset, originally with 99,000 reviews.
+- **Columns Used**: `content` (review text) and `vader_sentiment` (generated label).
 
-The dataset used is a cleaned CSV file containing ChatGPT reviews, originally sourced from the Google Play Store.
+### 2. Data Preprocessing & Labeling
+The text is cleaned and normalized using:
+- Lowercasing
+- Noise Removal (punctuation, numbers)
+- Tokenization
+- Stopword Removal (NLTK)
+- Lemmatization (spaCy)
 
-File path in the notebook:
-```
-/kaggle/input/sentiment-analysist/chatGPT_clean_reviews.csv
-```
+**VADER labeling rules**:
+- Compound ≥ 0.05 → `positive`
+- Compound ≤ -0.05 → `negative`
+- Otherwise → `neutral`
 
-## 🧰 Dependencies
+**Class Distribution**:
+- Positive: 79,455
+- Negative: 12,250
+- Neutral: 7,295
 
-Key libraries used:
-- `pandas`
-- `nltk`
-- `spacy`
-- `sklearn`
-- `matplotlib`, `seaborn` (for EDA)
+---
 
-To install required packages:
+## 🧠 Modeling Architectures
+
+### Scheme I: Bi-GRU with GloVe Embeddings
+- **Embeddings**: GloVe 100D, trainable
+- **Architecture**:
+  - Embedding Layer
+  - Bidirectional GRU (128 + 64 units)
+  - Dropout(0.5)
+  - Dense Softmax output (3-class)
+- **Framework**: TensorFlow / Keras
+
+### Scheme II: BERT Fine-Tuning
+- **Base**: `bert-base-uncased`
+- **Modifications**:
+  - Added classification head
+  - Fine-tuned on review data
+  - Weighted loss with custom `WeightedLossTrainer`
+- **Framework**: PyTorch + Hugging Face Transformers
+
+### Scheme III: RoBERTa Fine-Tuning
+- **Base**: `roberta-base`
+- **Modifications**:
+  - Classification head added
+  - Weighted CrossEntropy loss in PyTorch
+- **Framework**: PyTorch + Hugging Face Transformers
+
+---
+
+## 📈 Results
+
+| Model                     | Test Accuracy | Weighted F1 | Weighted Precision | Weighted Recall |
+|--------------------------|---------------|-------------|--------------------|-----------------|
+| Bi-GRU + GloVe           | 91.06%        | -           | -                  | -               |
+| BERT (bert-base-uncased) | 92.28%        | 0.9252      | 0.9301             | 0.9228          |
+| RoBERTa (roberta-base)   | **93.05%**    | **0.93**    | **0.93**           | **0.93**        |
+
+The RoBERTa-based model achieved the best performance across all metrics.
+
+---
+
+## 🧪 Inference Examples (RoBERTa)
+
+| Review                                               | Predicted Sentiment |
+|------------------------------------------------------|----------------------|
+| "This app is absolutely fantastic! It works perfectly..." | positive         |
+| "I'm really disappointed with the latest update..."       | negative         |
+| "The application is okay, it does what it says..."        | positive         |
+| "I hate this, it's the worst experience I've ever had."   | negative         |
+| "just it"                                                 | neutral          |
+
+---
+
+## ⚙️ How to Use
+
+Install dependencies:
 ```bash
-pip install nltk spacy scikit-learn matplotlib seaborn
+pip install pandas tensorflow torch transformers scikit-learn nltk spacy
 ```
 
-## 🚀 How to Run
-
-1. Clone the repository:
+Download NLTK and spaCy resources:
 ```bash
-git clone https://github.com/your-username/sentiment-analysis-chatgpt.git
-cd sentiment-analysis-chatgpt
+python -m spacy download en_core_web_sm
+python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('vader_lexicon')"
 ```
 
-2. Install the dependencies:
-```bash
-pip install -r requirements.txt
+### Inference with RoBERTa (Scheme III)
+```python
+import torch
+from transformers import AutoTokenizer
+
+# Assume 'model' and 'tokenizer' are loaded and trained
+# model = AutoModelForSequenceClassification.from_pretrained(...)
+# tokenizer = AutoTokenizer.from_pretrained(...)
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# model.to(device)
+
+reverse_label_map = {0: 'positive', 1: 'negative', 2: 'neutral'}
+
+def predict_sentiment(text, model, tokenizer, device, max_len=128):
+    model.eval()
+    with torch.no_grad():
+        encoding = tokenizer.encode_plus(
+            text,
+            add_special_tokens=True,
+            max_length=max_len,
+            return_token_type_ids=False,
+            padding='max_length',
+            truncation=True,
+            return_attention_mask=True,
+            return_tensors='pt',
+        )
+        input_ids = encoding['input_ids'].to(device)
+        attention_mask = encoding['attention_mask'].to(device)
+
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        pred_index = torch.argmax(outputs.logits, dim=1).item()
+        return reverse_label_map[pred_index]
+
+# Example
+new_review = "Wow, I love it! So useful and easy to use."
+predicted_sentiment = predict_sentiment(new_review, model, tokenizer, device)
+print(f"Review: '{new_review}'\nPredicted Sentiment: {predicted_sentiment}")
 ```
 
-3. Run the notebook:
-Open `sentimen-analysist-dicoding.ipynb` in Jupyter Notebook or VS Code and run all cells.
+---
 
-## 📌 Author
+## 👨‍💻 Author
 
-Developed by Nathanael Biran as part of a Dicoding NLP learning project.  
-For collaboration or questions, feel free to reach out via GitHub.
+Developed by Nathanael Biran as part of an advanced NLP project.  
+For feedback or collaboration, feel free to connect via GitHub.
 
 ---
